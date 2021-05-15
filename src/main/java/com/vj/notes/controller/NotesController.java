@@ -3,65 +3,80 @@ package com.vj.notes.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import com.vj.notes.entity.NotesEntity;
 import com.vj.notes.exception.ResourceNotFoundException;
 import com.vj.notes.repository.NotesRepository;
 
-@RestController
-@RequestMapping("/api")
+@Controller
 public class NotesController {
 
 	    @Autowired
 	    NotesRepository noteRepository;
 	    
-	    @GetMapping("/notes")
-	    public List<NotesEntity> getAllNotes() {
-	        return noteRepository.findAll();
+	    @GetMapping("/getNotes")
+	    public String getAllNotes(Model model) {
+	        List<NotesEntity>notes= noteRepository.findAll();
+	        model.addAttribute("notes",notes);
+	        return "listNotes";
 	    }
 	    
-	    @PostMapping("/notes")
-	    public NotesEntity createNote( @RequestBody NotesEntity note) {
-	        return noteRepository.save(note);
+	    @PostMapping("/postNotes")
+	    public String createNote( @ModelAttribute("notes") NotesEntity note) {
+	         noteRepository.save(note);
+	         return  "redirect:/getNotes";
 	    }
 	    
-	    @GetMapping("/notes/{id}")
-	    public NotesEntity getNoteById(@PathVariable(value = "id") Long noteId) {
-	        return noteRepository.findById(noteId)
+	  //Add Notes
+	  		@GetMapping("/showFormForAddNotes")
+	  		public String showFormForAdd(Model theModel) {
+	  			
+	  			// create model attribute to bind form data
+	  			NotesEntity notes = new NotesEntity();	
+	  			theModel.addAttribute("notes", notes);
+	  			
+	  			
+	  			return "AddNotes";
+	  		}
+	  		
+	    @GetMapping("/getByIdnotes/{id}")
+	    public String getNoteById(@PathVariable(value = "id") Long noteId,Model theModel) {
+	        NotesEntity notes= noteRepository.findById(noteId)
 	                .orElseThrow(() -> new ResourceNotFoundException("Note", "id", noteId));
+	        theModel.addAttribute("note",notes);
+	        return "notesById";
 	    }
 	    
-	    @PutMapping("/notes/{id}")
-	    public NotesEntity updateNote(@PathVariable(value = "id") Long noteId,
-	                                             @RequestBody NotesEntity noteDetails) {
+	 
+		
+	     @GetMapping("/updateNote/{id}")
+	    public String updateNote(@PathVariable(value = "id") Long noteId,
+	                                             Model theModel) {
 
 	    	NotesEntity note = noteRepository.findById(noteId)
 	                .orElseThrow(() -> new ResourceNotFoundException("Note", "id", noteId));
 
-	        note.setTitle(noteDetails.getTitle());
-	        note.setContent(noteDetails.getContent());
-
-	        NotesEntity updatedNote = noteRepository.save(note);
-	        return updatedNote;
+	       theModel.addAttribute("notes",note);
+	       
+	       return "AddNotes";
 	    }
 	    
-	    @DeleteMapping("/notes/{id}")
-	    public ResponseEntity<?> deleteNote(@PathVariable(value = "id") Long noteId) {
+	    @GetMapping("/deleteNote/{id}")
+	    public String deleteNote(@PathVariable(value = "id") Long noteId) {
 	    	NotesEntity note = noteRepository.findById(noteId)
 	                .orElseThrow(() -> new ResourceNotFoundException("Note", "id", noteId));
 
 	        noteRepository.delete(note);
 
-	        return ResponseEntity.ok().build();
+	        return "redirect:/getNotes";
 	    }
 
 }
